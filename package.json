@@ -1,0 +1,37 @@
+{
+  "name": "talkin-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js"
+  },
+  "keywords": [
+    "Node.js",
+    "Express.js",
+    "JavaScript",
+    "Socket.io",
+    "MongoDb"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.11.0",
+    "cors": "^2.8.6",
+    "cryptr": "^6.3.0",
+    "dayjs": "^1.11.13",
+    "dotenv": "^16.6.1",
+    "express": "^5.2.1",
+    "firebase-admin": "^10.3.0",
+    "moment-timezone": "^0.6.0",
+    "mongodb": "^7.1.1",
+    "mongoose": "^8.23.0",
+    "morgan": "^1.10.1",
+    "multer": "^1.4.5-lts.2",
+    "node-cron": "^4.1.1",
+    "nodemon": "^3.1.10",
+    "resend": "^4.5.0",
+    "socket.io": "^4.8.3"
+  }
+}
