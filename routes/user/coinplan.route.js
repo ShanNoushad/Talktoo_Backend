@@ -16,5 +16,7 @@ route.get("/getAvailableCoinPackage", validateUserAuthToken, checkAccessWithSecr
 
 //purchase coinPlan ( coinPlan history )
 route.post("/recordPurchasedCoinPlan", validateUserAuthToken, checkAccessWithSecretKey(), CoinplanController.recordPurchasedCoinPlan);
+//create Razorpay order (before checkout opens)
+route.get("/createRazorpayOrder", validateUserAuthToken, checkAccessWithSecretKey(), CoinplanController.createRazorpayOrder);
 
 module.exports = route;

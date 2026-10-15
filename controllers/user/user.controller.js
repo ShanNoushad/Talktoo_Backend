@@ -84,6 +84,205 @@ exports.verifyUserExistence = async (req, res) => {
 };
 
 //user login and sign up
+// exports.authenticateOrRegisterUser = async (req, res) => {
+//   try {
+//     if (!req.body) {
+//       return res.status(200).json({ status: false, message: "Request body is missing." });
+//     }
+
+//     const { identity, loginType, fcmToken, email, password, countryCode, phoneNumber, nickName, fullName, profilePic, birthDate } = req.body;
+
+//     if (!identity || loginType === undefined || !fcmToken) {
+//       if (req.file) deleteFile(req.file);
+//       return res.status(200).json({ status: false, message: "Oops! Invalid details!!" });
+//     }
+
+//    const uid = phoneNumber || email || identity || "";
+// const provider = "phone";
+// let userQuery = {};
+
+//     switch (loginType) {
+//       case 1:
+//         if (!email) {
+//           if (req.file) deleteFile(req.file);
+//           return res.status(200).json({ status: false, message: "Email is required." });
+//         }
+//         userQuery = { email: email.trim(), loginType: 1 };
+//         break;
+
+//       case 2:
+//         if (!identity && !email) {
+//           if (req.file) deleteFile(req.file);
+//           return res.status(200).json({ status: false, message: "Either identity or email is required." });
+//         }
+//         // userQuery = {};
+//         userQuery = { firebaseId: uid, loginType: 2 };
+//         break;
+
+//       case 3:
+//         if (!phoneNumber) {
+//           if (req.file) deleteFile(req.file);
+//           return res.status(200).json({ status: false, message: "Phone number is required." });
+//         }
+//         userQuery = { phoneNumber, loginType: 3 };
+//         break;
+
+//       case 4:
+//         if (!email) {
+//           if (req.file) deleteFile(req.file);
+//           return res.status(200).json({ status: false, message: "Email is required." });
+//         }
+
+//         const existingUser = await User.findOne({ email: email.trim(), loginType: 4 });
+
+//         if (existingUser) {
+//           userQuery = { email: email.trim(), loginType: 4 };
+//         } else {
+//           userQuery = {};
+//         }
+//         break;
+
+//       case 5: // Apple
+//         if (!email) {
+//           if (req.file) deleteFile(req.file);
+//           return res.status(400).json({ status: false, message: "email is required for Apple login." });
+//         }
+//         userQuery = { email: email.trim(), loginType: 5 };
+//         break;
+
+//       default:
+//         if (req.file) deleteFile(req.file);
+//         return res.status(200).json({ status: false, message: "Invalid loginType." });
+//     }
+
+//     let user = null;
+//     if (userQuery && Object.keys(userQuery).length > 0) {
+//       user = await User.findOne(userQuery).select("_id loginType nickName fullName profilePic email fcmToken lastlogin isBlock isListener listenerId");
+//     }
+
+//     if (user) {
+      
+//       if (user.isBlock) {
+//         return res.status(403).json({ status: false, message: "🚷 User is blocked by the admin." });
+//       }
+
+//       if (user.isListener && user.listenerId) {
+//         const listener = await Listener.findById(user.listenerId).select("isBlock fcmToken");
+//         if (listener?.isBlock) {
+//           return res.status(403).json({ status: false, message: "🚷 Listener account is blocked by the admin." });
+//         }
+
+//         await Listener.updateOne(
+//           { _id: user.listenerId },
+//           {
+//             $set: {
+//               fcmToken: fcmToken || listener.fcmToken,
+//             },
+//           },
+          
+//         );
+//       }
+
+//       user.nickName = nickName?.trim() || user.nickName;
+//       user.fullName = fullName?.trim() || user.fullName;
+//       user.profilePic = req.file ? req.file.path : profilePic || user.profilePic;
+//       user.fcmToken = fcmToken || user.fcmToken;
+//       user.lastlogin = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+//       await user.save();
+
+//       return res.status(200).json({
+//         status: true,
+//         message: "User logged in.",
+//         user,
+//         signUp: false,
+//       });
+//     } else {
+//       const [userUniqueId, historyUniqueId] = await Promise.all([generateUniqueId(), generateHistoryUniqueId()]);
+
+//       // if (existingFirebaseUser) {
+//       //   return res.status(200).json({ status: false, message: "User with this Firebase ID already exists." });
+//       // }
+
+//       const bonusCoins = settingJSON.dailyLoginBonusCoins ?? 5000;
+
+//       const newUser = new User({
+//         loginType,
+//         fullName: fullName || "",
+//         nickName: nickName || "",
+//         countryCode: countryCode || "",
+//         phoneNumber: phoneNumber || "",
+//         email: email?.trim(),
+//         password: password ? cryptr.encrypt(password) : "",
+//         profilePic: req.file ? req.file.path : profilePic,
+//         fcmToken,
+//         identity,
+//         uniqueId: userUniqueId,
+//         coins: bonusCoins,
+//         birthDate,
+//         date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
+//       });
+
+//       res.status(200).json({
+//         status: true,
+//         message: "A new user has registered an account.",
+//         signUp: true,
+//         user: {
+//           _id: newUser._id,
+//           loginType: newUser.loginType,
+//           name: newUser.fullName,
+//           profilePic: newUser.profilePic,
+//           fcmToken: newUser.fcmToken,
+//           lastlogin: newUser.date,
+//         },
+//       });
+
+//       await Promise.all([
+//         newUser.save(),
+//         History.create({
+//           type: 1,
+//           uniqueId: historyUniqueId,
+//           userId: newUser._id,
+//           userCoin: bonusCoins,
+//           date: newUser.date,
+//         }),
+//       ]);
+
+//       if (newUser?.fcmToken) {
+//         const payload = {
+//           token: newUser.fcmToken,
+//           data: {
+//             title: "🚀 Instant Bonus Activated! 🎁",
+//             body: "🎊 Hooray! You've unlocked a special welcome reward just for joining us. Enjoy your bonus! 💰",
+//             type: "LOGINBONUS",
+//           },
+//         };
+
+//         try {
+//           const adminInstance = await admin;
+//           const response = await adminInstance.messaging().send(payload);
+//           console.log("Successfully sent with response: ", response);
+
+//           const notification = new Notification({
+//             userId: newUser._id,
+//             title: payload.data.title,
+//             message: payload.data.body,
+//             date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
+//           });
+
+//           await notification.save();
+//         } catch (err) {
+//           console.error("Error sending FCM notification:", err);
+//         }
+//       }
+//     }
+//   } catch (error) {
+//     if (req.file) deleteFile(req.file);
+//     console.error("Error:", error);
+//     return res.status(500).json({ status: false, message: "Internal Server Error" });
+//   }
+// };
+
+
 exports.authenticateOrRegisterUser = async (req, res) => {
   try {
     if (!req.body) {
@@ -97,7 +296,8 @@ exports.authenticateOrRegisterUser = async (req, res) => {
       return res.status(200).json({ status: false, message: "Oops! Invalid details!!" });
     }
 
-    const { uid, provider } = req.user;
+    const uid = phoneNumber || email || identity || "";
+    const provider = "phone";
     let userQuery = {};
 
     switch (loginType) {
@@ -114,7 +314,6 @@ exports.authenticateOrRegisterUser = async (req, res) => {
           if (req.file) deleteFile(req.file);
           return res.status(200).json({ status: false, message: "Either identity or email is required." });
         }
-        // userQuery = {};
         userQuery = { firebaseId: uid, loginType: 2 };
         break;
 
@@ -131,9 +330,7 @@ exports.authenticateOrRegisterUser = async (req, res) => {
           if (req.file) deleteFile(req.file);
           return res.status(200).json({ status: false, message: "Email is required." });
         }
-
         const existingUser = await User.findOne({ email: email.trim(), loginType: 4 });
-
         if (existingUser) {
           userQuery = { email: email.trim(), loginType: 4 };
         } else {
@@ -141,7 +338,7 @@ exports.authenticateOrRegisterUser = async (req, res) => {
         }
         break;
 
-      case 5: // Apple
+      case 5:
         if (!email) {
           if (req.file) deleteFile(req.file);
           return res.status(400).json({ status: false, message: "email is required for Apple login." });
@@ -160,15 +357,6 @@ exports.authenticateOrRegisterUser = async (req, res) => {
     }
 
     if (user) {
-      if (user.firebaseId && user.firebaseId !== uid) {
-        console.log("If a user exists but firebaseId mismatch");
-        console.warn(`⚠️ UID mismatch — token UID (${uid}) vs user.firebaseId (${user.firebaseId})`);
-        return res.status(403).json({
-          status: false,
-          message: "Identity already taken or unauthorized login attempt.",
-        });
-      }
-
       if (user.isBlock) {
         return res.status(403).json({ status: false, message: "🚷 User is blocked by the admin." });
       }
@@ -181,11 +369,7 @@ exports.authenticateOrRegisterUser = async (req, res) => {
 
         await Listener.updateOne(
           { _id: user.listenerId },
-          {
-            $set: {
-              fcmToken: fcmToken || listener.fcmToken,
-            },
-          },
+          { $set: { fcmToken: fcmToken || listener.fcmToken } }
         );
       }
 
@@ -202,12 +386,9 @@ exports.authenticateOrRegisterUser = async (req, res) => {
         user,
         signUp: false,
       });
-    } else {
-      const [existingFirebaseUser, userUniqueId, historyUniqueId] = await Promise.all([User.exists({ firebaseId: uid }), generateUniqueId(), generateHistoryUniqueId()]);
 
-      if (existingFirebaseUser) {
-        return res.status(200).json({ status: false, message: "User with this Firebase ID already exists." });
-      }
+    } else {
+      const [userUniqueId, historyUniqueId] = await Promise.all([generateUniqueId(), generateHistoryUniqueId()]);
 
       const bonusCoins = settingJSON.dailyLoginBonusCoins ?? 5000;
 
@@ -223,13 +404,25 @@ exports.authenticateOrRegisterUser = async (req, res) => {
         fcmToken,
         identity,
         uniqueId: userUniqueId,
-        firebaseId: uid,
-        authProvider: provider,
         coins: bonusCoins,
         birthDate,
         date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
       });
 
+      // ✅ FIX: Save user BEFORE sending response
+      // so getUserProfile can find the user immediately after login
+      await Promise.all([
+        newUser.save(),
+        History.create({
+          type: 1,
+          uniqueId: historyUniqueId,
+          userId: newUser._id,
+          userCoin: bonusCoins,
+          date: newUser.date,
+        }),
+      ]);
+
+      // ✅ Now respond after user is saved in DB
       res.status(200).json({
         status: true,
         message: "A new user has registered an account.",
@@ -244,17 +437,7 @@ exports.authenticateOrRegisterUser = async (req, res) => {
         },
       });
 
-      await Promise.all([
-        newUser.save(),
-        History.create({
-          type: 1,
-          uniqueId: historyUniqueId,
-          userId: newUser._id,
-          userCoin: bonusCoins,
-          date: newUser.date,
-        }),
-      ]);
-
+      // ✅ FCM notification fires after response (fire and forget)
       if (newUser?.fcmToken) {
         const payload = {
           token: newUser.fcmToken,
@@ -724,5 +907,40 @@ exports.generateFirebaseCustomToken = async (req, res) => {
       status: false,
       message: error.message || "Failed to create Firebase custom auth token.",
     });
+  }
+};
+exports.updateFcmToken = async (req, res) => {
+  try {
+    const userUid = req.headers["x-auth-uid"];
+    if (!userUid) {
+      return res.status(401).json({ status: false, message: "User UID required for authentication." });
+    }
+
+    const { fcmToken } = req.body;
+    if (!fcmToken) {
+      return res.status(200).json({ status: false, message: "fcmToken is required." });
+    }
+
+    // Look up by _id (what the app sends as x-auth-uid)
+    if (!mongoose.Types.ObjectId.isValid(userUid)) {
+      return res.status(400).json({ status: false, message: "Invalid user ID." });
+    }
+
+    const user = await User.findById(userUid).select("_id isListener listenerId");
+    if (!user) {
+      return res.status(200).json({ status: false, message: "User not found." });
+    }
+
+    user.fcmToken = fcmToken;
+    await user.save();
+
+    if (user.isListener && user.listenerId) {
+      await Listener.findByIdAndUpdate(user.listenerId, { $set: { fcmToken } });
+    }
+
+    return res.status(200).json({ status: true, message: "FCM token updated successfully." });
+  } catch (error) {
+    console.error("❌ Error updating FCM token:", error);
+    return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });
   }
 };

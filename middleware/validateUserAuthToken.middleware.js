@@ -1,20 +1,10 @@
-const admin = require("firebase-admin");
-
-const privateKey = settingJSON?.privateKey;
-
-if (!privateKey) {
-  console.error("❌ Firebase private key not found in global setting.");
-  process.exit(1); // Exit process to prevent running without credentials
-}
-
-//import model
 const User = require("../models/user.model");
 
 const validateUserAuthToken = async (req, res, next) => {
   console.log("🔹 [AUTH] Received authentication request.");
 
-  const authHeader = req.headers["x-auth-token"] || req.headers["x-auth-token"];
-  const userUid = req.headers["x-auth-uid"];
+  const authHeader = req.headers["x-auth-token"];
+  const userUid = req.headers["x-auth-uid"]; // now MongoDB _id
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     console.warn("⚠️ [AUTH] Missing or invalid authorization header.");
@@ -22,46 +12,41 @@ const validateUserAuthToken = async (req, res, next) => {
   }
 
   if (!userUid) {
-    console.warn("⚠️ [AUTH] Missing API key or User UID.");
+    console.warn("⚠️ [AUTH] Missing User UID.");
     return res.status(401).json({ status: false, message: "User UID required for authentication." });
   }
 
   const token = authHeader.split("Bearer ")[1];
 
+  // ← Replace Firebase verification with secret key check
+  if (token !== process.env.secretKey) {
+    console.warn("⚠️ [AUTH] Invalid secret key.");
+    return res.status(401).json({ status: false, message: "Invalid token. Authorization failed." });
+  }
+
   try {
-    console.log("🔹 [AUTH] Verifying Firebase token...");
-
-    const [decodedToken, mongoUser] = await Promise.all([admin.auth().verifyIdToken(token), User.findOne({ firebaseId: userUid }).select("_id isBlock").lean()]);
-
-    if (!decodedToken) {
-      console.warn("⚠️ [AUTH] Token verification failed.");
-      return res.status(401).json({ status: false, message: "Invalid token. Authorization failed." });
-    }
+    // ← Find user by MongoDB _id instead of firebaseId
+    const mongoUser = await User.findById(userUid).select("_id isBlock").lean();
 
     if (!mongoUser) {
-      console.warn(`⚠️ [AUTH] No user found in MongoDB for Firebase UID: ${decodedToken.uid}`);
+      console.warn(`⚠️ [AUTH] No user found for ID: ${userUid}`);
       return res.status(200).json({ status: false, message: "User not found in the database." });
     }
 
     if (mongoUser.isBlock) {
-      console.warn(`⚠️ [AUTH] User is blocked by admin: ${decodedToken.uid}`);
+      console.warn(`⚠️ [AUTH] User is blocked: ${userUid}`);
       return res.status(403).json({ status: false, message: "🚷 User are blocked by the admin." });
     }
 
     req.user = {
-      uid: decodedToken.uid,
       userId: mongoUser._id,
     };
 
-    console.log(`✅ [AUTH] User authentication successful. MongoID: ${mongoUser._id}`);
+    console.log(`✅ [AUTH] Authentication successful. MongoID: ${mongoUser._id}`);
     next();
   } catch (error) {
-    console.error("❌ [AUTH ERROR] Token verification failed:", error.message);
-
-    return res.status(401).json({
-      status: false,
-      message: error.code === "auth/id-token-expired" ? "Token expired. Please reauthenticate." : "Invalid token. Authorization failed.",
-    });
+    console.error("❌ [AUTH ERROR]:", error.message);
+    return res.status(401).json({ status: false, message: "Invalid token. Authorization failed." });
   }
 };
 

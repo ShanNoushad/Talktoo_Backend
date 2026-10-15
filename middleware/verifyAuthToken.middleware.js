@@ -1,16 +1,7 @@
-const admin = require("firebase-admin");
-
-const privateKey = settingJSON?.privateKey;
-
-if (!privateKey) {
-  console.error("❌ Firebase private key not found in global setting.");
-  process.exit(1); // Exit process to prevent running without credentials
-}
-
 const verifyAuthToken = async (req, res, next) => {
   console.log("🟢 [AUTH] Incoming request received.");
 
-  const authHeader = req.headers["x-auth-token"] || req.headers["x-auth-token"];
+  const authHeader = req.headers["x-auth-token"];
   console.log("🔹 [AUTH] Authorization Header:", authHeader);
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -20,29 +11,18 @@ const verifyAuthToken = async (req, res, next) => {
 
   const token = authHeader.split("Bearer ")[1];
 
-  try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    console.log("✅ [AUTH] Token successfully verified.", decodedToken);
-
-    if (!decodedToken) {
-      console.warn("⚠️ [AUTH] Invalid token. Authorization failed.");
-      return res.status(401).json({ status: false, message: "Invalid token. Authorization failed." });
-    }
-
-    req.user = {
-      uid: decodedToken.uid,
-      provider: decodedToken.firebase?.sign_in_provider || "unknown",
-    };
-
-    next();
-  } catch (error) {
-    console.error(`❌ [AUTH] Token verification failed: ${error.message}`);
-
-    return res.status(401).json({
-      status: false,
-      message: error.code === "auth/id-token-expired" ? "Token expired. Please reauthenticate." : "Invalid token. Authorization failed.",
-    });
+  // ← Replace Firebase verification with secret key check
+  if (token !== process.env.secretKey) {
+    console.warn("⚠️ [AUTH] Invalid secret key.");
+    return res.status(401).json({ status: false, message: "Invalid token. Authorization failed." });
   }
+
+  req.user = {
+    uid: token, // no Firebase uid anymore
+  };
+
+  console.log("✅ [AUTH] Token successfully verified.");
+  next();
 };
 
 module.exports = verifyAuthToken;

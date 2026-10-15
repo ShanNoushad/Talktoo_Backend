@@ -6,6 +6,21 @@ require("dotenv").config();
 //cors
 const cors = require("cors");
 app.use(cors());
+
+//Razorpay webhook route — MUST be registered before express.json(),
+//since it needs the raw request body for signature verification
+const { handleRazorpayWebhook } = require("./controllers/user/razorpayWebhook");
+app.post(
+  "/api/webhooks/razorpay",
+  express.raw({ type: "application/json" }),
+  (req, res, next) => {
+    req.rawBody = req.body; // Buffer
+    req.body = JSON.parse(req.body.toString("utf8"));
+    next();
+  },
+  handleRazorpayWebhook
+);
+
 app.use(express.json());
 
 //logging middleware

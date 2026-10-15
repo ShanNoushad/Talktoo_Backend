@@ -23,8 +23,7 @@ const UserController = require("../../controllers/user/user.controller");
 route.post("/verifyUserExistence", checkAccessWithSecretKey(), UserController.verifyUserExistence);
 
 //user login or sign up
-route.post("/authenticateOrRegisterUser", verifyAuthToken, checkAccessWithSecretKey(), UserController.authenticateOrRegisterUser);
-
+route.post("/authenticateOrRegisterUser", checkAccessWithSecretKey(), UserController.authenticateOrRegisterUser);
 //update user's profile
 route.patch("/updateUserProfile", validateUserAuthToken, checkAccessWithSecretKey(), upload.single("profilePic"), UserController.updateUserProfile);
 
@@ -57,5 +56,6 @@ route.get("/getfirebaseIdByDeviceId", checkAccessWithSecretKey(), UserController
 
 // CREATE Firebase Custom Token using Firebase UID
 route.get("/generateFirebaseCustomToken", checkAccessWithSecretKey(), UserController.generateFirebaseCustomToken);
-
+// update FCM token
+route.post("/updateFcmToken", checkAccessWithSecretKey(), UserController.updateFcmToken);
 module.exports = route;

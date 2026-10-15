@@ -1,39 +1,55 @@
+// // const admin = require("firebase-admin");
+
+// // const privateKey = settingJSON?.privateKey;
+
+// // if (!privateKey) {
+// //   console.error("❌ Firebase private key not found in global setting.");
+// //   process.exit(1); // Exit process to prevent running without credentials
+// // }
+
+// // const initFirebase = async () => {
+// //   try {
+// //     if (!admin.apps.length) {
+// //       admin.initializeApp({
+// //         credential: admin.credential.cert(privateKey),
+// //       });
+// //       console.log("✅ Firebase Admin SDK initialized successfully");
+// //     }
+// //     return admin;
+// //   } catch (error) {
+// //     console.error("Failed to initialize Firebase Admin SDK:", error);
+// //     throw error;
+// //   }
+// // };
+
+// // module.exports = initFirebase();
+
+
 // const admin = require("firebase-admin");
+// const serviceAccount = require("../config/firebaseKey.json");
 
-// const privateKey = settingJSON?.privateKey;
+// if (!admin.apps.length) {
+//   admin.initializeApp({
+//     credential: admin.credential.cert(serviceAccount),
+//   });
 
-// if (!privateKey) {
-//   console.error("❌ Firebase private key not found in global setting.");
-//   process.exit(1); // Exit process to prevent running without credentials
+//   console.log("✅ Firebase Admin SDK initialized successfully");
 // }
 
-// const initFirebase = async () => {
-//   try {
-//     if (!admin.apps.length) {
-//       admin.initializeApp({
-//         credential: admin.credential.cert(privateKey),
-//       });
-//       console.log("✅ Firebase Admin SDK initialized successfully");
-//     }
-//     return admin;
-//   } catch (error) {
-//     console.error("Failed to initialize Firebase Admin SDK:", error);
-//     throw error;
-//   }
-// };
-
-// module.exports = initFirebase();
-
-
+// module.exports = admin;
 const admin = require("firebase-admin");
-const serviceAccount = require("../config/firebaseKey.json");
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
+try {
+  const serviceAccount = require("../config/firebaseKey.json");
 
-  console.log("✅ Firebase Admin SDK initialized successfully");
+  if (!admin.apps.length) {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+    console.log("✅ Firebase initialized");
+  }
+} catch (e) {
+  console.warn("⚠️ Firebase disabled — firebaseKey.json not found");
 }
 
 module.exports = admin;
